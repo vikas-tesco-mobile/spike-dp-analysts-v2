@@ -1,0 +1,50 @@
+name: CI
+on:
+  push:
+
+permissions:
+  contents: write
+  pull-requests: write
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    environment: dev
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12.3'
+      - name: Install Poetry 2.2.1
+        env:
+          POETRY_VERSION: 2.2.1
+        run: |
+          curl -sSL https://install.python-poetry.org | python3 - --version $POETRY_VERSION
+          export PATH="$HOME/.local/bin:$PATH"
+      - name: Install dependencies
+        run: |
+          poetry install --with dev
+      - name: Run pre-commit (all hooks)
+        run: |
+          poetry run pre-commit run --all-files --show-diff-on-failure
+      - name: Run DBT Unit tests
+        working-directory: dbt_project
+        env:
+          DBT_ACCESS_TOKEN: ${{ secrets.DATABRICKS_TOKEN_DEV }}
+        run: |
+          poetry run dbt deps
+          poetry run dbt test --select test_type:unit --target dev
+
+  trigger-core-deploy:
+    name: Trigger Core Repo Deployment
+    needs: [test]
+    if: github.ref == 'refs/heads/main' && needs.test.result == 'success'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger dp-core-v2 CD pipeline
+        run: |
+          curl -X POST \
+            -H "Accept: application/vnd.github.v3+json" \
+            -H "Authorization: token ${{ secrets.CORE_REPO_DISPATCH_TOKEN }}" \
+            https://api.github.com/repos/vikas-tesco-mobile/spike-dp-core-v2/dispatches \
+            -d '{"event_type": "dbt-updated", "client_payload": {"triggered_by": "spike-dp-analysts-v2", "commit": "${{ github.sha }}"}}'
