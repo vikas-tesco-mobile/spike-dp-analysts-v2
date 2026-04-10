@@ -6,7 +6,7 @@ select
     'CHARGE' as quantity_type,
     'SECOND' as quantity_unit,
     cast(0.15 as double) as usage_rating_amount,
-    cast(500.0 as double) as usage_msg_amount,
+    cast(500.0 as decimal(25, 8)) as usage_msg_amount,
     cast(0 as bigint) as flags
 union all
 select
@@ -17,7 +17,7 @@ select
     'CHARGE' as quantity_type,
     'SECOND' as quantity_unit,
     cast(4.25 as double) as usage_rating_amount,
-    cast(15.0 as double) as usage_msg_amount,
+    cast(15.0 as decimal(25, 8)) as usage_msg_amount,
     cast(0 as bigint) as flags
 union all
 select
@@ -28,7 +28,7 @@ select
     'DATA_VOLUME' as quantity_type,
     'BYTE' as quantity_unit,
     cast(0.00 as double) as usage_rating_amount,
-    cast(94371840.0 as double) as usage_msg_amount,
+    cast(94371840.0 as decimal(25, 8)) as usage_msg_amount,
     cast(0 as bigint) as flags
 union all
 select
@@ -39,7 +39,7 @@ select
     'MESSAGE' as quantity_type,
     'COUNT' as quantity_unit,
     cast(0.25 as double) as usage_rating_amount,
-    cast(1.0 as double) as usage_msg_amount,
+    cast(1.0 as decimal(25, 8)) as usage_msg_amount,
     cast(0 as bigint) as flags
 union all
 select
@@ -50,5 +50,5 @@ select
     'MESSAGE' as quantity_type,
     'COUNT' as quantity_unit,
     cast(0.50 as double) as usage_rating_amount,
-    cast(1.0 as double) as usage_msg_amount,
+    cast(1.0 as decimal(25, 8)) as usage_msg_amount,
     cast(0 as bigint) as flags
