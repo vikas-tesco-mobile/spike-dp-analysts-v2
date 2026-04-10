@@ -28,16 +28,67 @@ jobs:
         run: |
           poetry run pre-commit run --all-files --show-diff-on-failure
 
-  trigger-core-deploy:
-    name: Trigger Core Repo Deployment
+  deploy-core-dev:
+    name: Deploy Core Repo to Dev
     needs: [test]
     if: github.ref == 'refs/heads/main' && needs.test.result == 'success'
     runs-on: ubuntu-latest
+    environment: dev
     steps:
-      - name: Trigger dp-core-v2 CD pipeline
+      - name: Checkout core repo
+        uses: actions/checkout@v4
+        with:
+          repository: vikas-tesco-mobile/spike-dp-core-v2
+          token: ${{ secrets.CORE_REPO_DISPATCH_TOKEN }}
+          path: spike-dp-core-v2
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12.3'
+
+      - name: Install Poetry 2.2.1
+        env:
+          POETRY_VERSION: 2.2.1
         run: |
-          curl -X POST \
-            -H "Accept: application/vnd.github.v3+json" \
-            -H "Authorization: token ${{ secrets.CORE_REPO_DISPATCH_TOKEN }}" \
-            https://api.github.com/repos/vikas-tesco-mobile/spike-dp-core-v2/dispatches \
-            -d '{"event_type": "dbt-updated", "client_payload": {"triggered_by": "spike-dp-analysts-v2", "commit": "${{ github.sha }}"}}'
+          curl -sSL https://install.python-poetry.org | python3 - --version $POETRY_VERSION
+          echo "$HOME/.local/bin" >> $GITHUB_PATH
+
+      - name: Configure Poetry
+        working-directory: spike-dp-core-v2
+        run: |
+          poetry config virtualenvs.create true
+          poetry --version
+
+      - name: Install dependencies
+        working-directory: spike-dp-core-v2
+        run: |
+          poetry install --with dev
+
+      - name: Install Databricks CLI
+        run: |
+          curl -fsSL https://raw.githubusercontent.com/databricks/setup-cli/main/install.sh | bash
+          databricks --version
+
+      - name: Build artifact (wheel)
+        working-directory: spike-dp-core-v2
+        run: |
+          poetry build -f wheel
+
+      - name: Verify wheel was created
+        working-directory: spike-dp-core-v2
+        run: |
+          ls -la dist/
+          ls -la dist/*.whl || echo "No wheel files found"
+
+      - name: Deploy to Dev
+        working-directory: spike-dp-core-v2
+        shell: bash
+        env:
+          DATABRICKS_HOST: ${{ secrets.DATABRICKS_HOST_DEV }}
+          DATABRICKS_TOKEN: ${{ secrets.DATABRICKS_TOKEN_DEV }}
+        run: |
+          echo "Deploying spike-dp-core-v2 from spike-dp-analysts-v2 CI..."
+          echo "Trigger commit: ${{ github.sha }}"
+          databricks bundle validate --target dev
+          databricks bundle deploy --target dev
