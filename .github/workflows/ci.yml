@@ -34,6 +34,8 @@ jobs:
     if: github.ref == 'refs/heads/main' && needs.test.result == 'success'
     runs-on: ubuntu-latest
     environment: dev
+    env:
+      DBT_WORKSPACE_PROJECT_PATH: /Workspace/Shared/dbt-projects/spike-dp-analysts-v2/dev/dbt_project
     steps:
       - name: Checkout analysts repo
         uses: actions/checkout@v4
@@ -46,23 +48,6 @@ jobs:
           repository: vikas-tesco-mobile/spike-dp-core-v2
           token: ${{ secrets.CORE_REPO_DISPATCH_TOKEN }}
           path: spike-dp-core-v2
-
-      - name: Stage dbt project into core bundle
-        run: |
-          rm -rf spike-dp-core-v2/dbt_project
-          cp -R spike-dp-analysts-v2/dbt_project spike-dp-core-v2/dbt_project
-
-      - name: Stage dbt project into git index
-        working-directory: spike-dp-core-v2
-        run: |
-          rm -f dbt_project/.gitkeep
-          git add -A dbt_project
-          git status --short dbt_project
-
-      - name: Verify staged dbt project
-        run: |
-          ls -la spike-dp-core-v2/dbt_project
-          test -f spike-dp-core-v2/dbt_project/dbt_project.yml
 
       - name: Set up Python
         uses: actions/setup-python@v5
@@ -91,6 +76,21 @@ jobs:
         run: |
           curl -fsSL https://raw.githubusercontent.com/databricks/setup-cli/main/install.sh | bash
           databricks --version
+
+      - name: Upload dbt project to Databricks workspace
+        env:
+          DATABRICKS_HOST: ${{ secrets.DATABRICKS_HOST_DEV }}
+          DATABRICKS_TOKEN: ${{ secrets.DATABRICKS_TOKEN_DEV }}
+        run: |
+          databricks workspace delete "$DBT_WORKSPACE_PROJECT_PATH" --recursive || true
+          databricks workspace import-dir spike-dp-analysts-v2/dbt_project "$DBT_WORKSPACE_PROJECT_PATH" --overwrite
+
+      - name: Verify uploaded dbt project
+        env:
+          DATABRICKS_HOST: ${{ secrets.DATABRICKS_HOST_DEV }}
+          DATABRICKS_TOKEN: ${{ secrets.DATABRICKS_TOKEN_DEV }}
+        run: |
+          databricks workspace ls "$DBT_WORKSPACE_PROJECT_PATH"
 
       - name: Build artifact (wheel)
         working-directory: spike-dp-core-v2
