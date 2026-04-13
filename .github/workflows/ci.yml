@@ -90,7 +90,7 @@ jobs:
           DATABRICKS_HOST: ${{ secrets.DATABRICKS_HOST_DEV }}
           DATABRICKS_TOKEN: ${{ secrets.DATABRICKS_TOKEN_DEV }}
         run: |
-          databricks workspace ls "$DBT_WORKSPACE_PROJECT_PATH"
+          databricks workspace list "$DBT_WORKSPACE_PROJECT_PATH"
 
       - name: Build artifact (wheel)
         working-directory: spike-dp-core-v2
