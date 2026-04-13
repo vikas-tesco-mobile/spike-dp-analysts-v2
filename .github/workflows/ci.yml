@@ -35,7 +35,7 @@ jobs:
     runs-on: ubuntu-latest
     environment: dev
     env:
-      DBT_WORKSPACE_PROJECT_PATH: /Workspace/Shared/dbt-projects/spike-dp-analysts-v2/dev/dbt_project
+      DBT_WORKSPACE_PROJECT_PATH: /Workspace/Shared/dbt-projects/spike-dp-analysts-v2/dbt_project
     steps:
       - name: Checkout analysts repo
         uses: actions/checkout@v4
