@@ -35,12 +35,27 @@ jobs:
     runs-on: ubuntu-latest
     environment: dev
     steps:
+      - name: Checkout analysts repo
+        uses: actions/checkout@v4
+        with:
+          path: spike-dp-analysts-v2
+
       - name: Checkout core repo
         uses: actions/checkout@v4
         with:
           repository: vikas-tesco-mobile/spike-dp-core-v2
           token: ${{ secrets.CORE_REPO_DISPATCH_TOKEN }}
           path: spike-dp-core-v2
+
+      - name: Stage dbt project into core bundle
+        run: |
+          rm -rf spike-dp-core-v2/dbt_project
+          cp -R spike-dp-analysts-v2/dbt_project spike-dp-core-v2/dbt_project
+
+      - name: Verify staged dbt project
+        run: |
+          ls -la spike-dp-core-v2/dbt_project
+          test -f spike-dp-core-v2/dbt_project/dbt_project.yml
 
       - name: Set up Python
         uses: actions/setup-python@v5
