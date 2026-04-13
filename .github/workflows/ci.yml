@@ -52,6 +52,13 @@ jobs:
           rm -rf spike-dp-core-v2/dbt_project
           cp -R spike-dp-analysts-v2/dbt_project spike-dp-core-v2/dbt_project
 
+      - name: Stage dbt project into git index
+        working-directory: spike-dp-core-v2
+        run: |
+          rm -f dbt_project/.gitkeep
+          git add -A dbt_project
+          git status --short dbt_project
+
       - name: Verify staged dbt project
         run: |
           ls -la spike-dp-core-v2/dbt_project
